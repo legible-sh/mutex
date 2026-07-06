@@ -1,0 +1,34 @@
+{
+  "name": "mutex-sh",
+  "version": "0.1.0",
+  "description": "flock(1) for agents that live on different machines. Named locks and counting semaphores over plain HTTP, with TTL leases and fencing tokens.",
+  "type": "module",
+  "bin": {
+    "mutex": "bin/mutex.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "node bin/mutex.mjs serve",
+    "dev": "node --watch bin/mutex.mjs serve"
+  },
+  "keywords": [
+    "lock",
+    "mutex",
+    "semaphore",
+    "lease",
+    "fencing-token",
+    "distributed-lock",
+    "agents",
+    "curl"
+  ],
+  "author": "Myles Krecny",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mkrecny/mutex.git"
+  },
+  "homepage": "https://mutex.sh"
+}
