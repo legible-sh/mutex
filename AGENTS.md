@@ -6,7 +6,7 @@ mutex is complete and green: a zero-dependency Node (>= 20, ESM) HTTP lock
 server plus a CLI client, tested end-to-end. Named locks and counting
 semaphores with TTL leases, blocking acquire (long-poll, FIFO), heartbeat
 renewal, and per-topic monotonic fencing tokens. Default port 4185. It is one
-of ten sibling primitives in the agent-infra family (see README footer);
+of ten sibling primitives in the legible family (see README footer);
 as of this writing it is the first one built, so cross-links to siblings
 point at products that do not exist yet.
 

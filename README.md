@@ -128,7 +128,7 @@ The hosted instance will sell capacity and guarantees, never the verbs — self-
 
 ## The family
 
-mutex is one of ten agent-infra primitives, each a single curl away:
+mutex is one of ten legible primitives, each a single curl away:
 
 | | port | |
 |---|---|---|

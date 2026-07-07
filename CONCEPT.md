@@ -33,7 +33,7 @@ Not "a distributed lock service." That product has died twice, and its HN thread
 
 ## Honest risks
 
-- **Standalone lock products die of thinness.** A lock service is a feature, not a company — dlock and Lockable both proved it. Mitigation: mutex is not standalone. It's positioned inside the agent-infra suite, shares its hosted footprint, and is discovered through the family. Ten thin primitives make one thick offering.
+- **Standalone lock products die of thinness.** A lock service is a feature, not a company — dlock and Lockable both proved it. Mitigation: mutex is not standalone. It's positioned inside the legible suite, shares its hosted footprint, and is discovered through the family. Ten thin primitives make one thick offering.
 - **Correctness pedantry is a permanent audience.** Any lock-over-HTTP launch attracts the Kleppmann link within minutes. Mitigation: agree with the objection in the first paragraph, ship fencing in every grant, and never use the word "guarantee." Reviewers can only repeat what the README already says.
 - **Single-node coordination is a real limit.** No consensus, no failover; the hosted instance is a SPOF for its locks. Mitigation: say so plainly ("for spacecraft, buy etcd"), keep `--data-dir` restart survival, and note that the target workload — human-scale agent fleets — tolerates seconds of lock-service downtime.
 - **The hosted instance can read your topic names.** Capability-by-obscurity is honest but weak. Mitigation: unguessable names by convention, `--token` for self-hosters, per-topic ACLs on the paid tier.
