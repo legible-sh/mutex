@@ -32,7 +32,7 @@ const HELP = (base) => `mutex — flock(1) for agents that live on different mac
 Name yourself with 'X-Name: worker-3' (or a plain-text body). Topics are
 created on first use: [a-zA-Z0-9_-]{1,64} — pick something unguessable.
 This is a lease, not a lock: pass the fence to the resource you protect
-and reject writes from lower fences. https://github.com/mkrecny/mutex
+and reject writes from lower fences. https://github.com/legible-sh/mutex
 `;
 
 export function createServer(options = {}) {

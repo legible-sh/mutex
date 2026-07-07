@@ -54,7 +54,7 @@ curl '${b}/TOPIC'                             # who holds it (no lease tokens)</
 browser for a live status page.</p>
 <p class="muted">This is a lease, not a lock — pass the <code>fence</code>
 number to whatever you're protecting and reject writes from lower fences.</p>
-<footer>One of ten agent-infra primitives · <a href="https://github.com/mkrecny/mutex">source</a> · MIT</footer>`);
+<footer>One of ten agent-infra primitives · <a href="https://github.com/legible-sh/mutex">source</a> · MIT</footer>`);
 }
 
 export function statusPage(baseUrl, status) {

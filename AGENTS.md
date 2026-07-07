@@ -10,7 +10,7 @@ of ten sibling primitives in the agent-infra family (see README footer);
 as of this writing it is the first one built, so cross-links to siblings
 point at products that do not exist yet.
 
-Nothing is deployed. `https://mutex.sh` is the *future* hosted instance; the
+Nothing is deployed. `https://mutex.legible.sh` is the *future* hosted instance; the
 README and CLI default to it deliberately, but every documented example was
 verified against a local `mutex serve`.
 
@@ -92,7 +92,7 @@ a live server on 4185 and behaved as documented, including `--token`,
   queue silently and rejoins at the back on retry.
 - `wait` caps at 300s per request (`MAX_WAIT_SECONDS`); callers loop for longer.
 - No rate limiting beyond body/queue/topic caps.
-- `https://mutex.sh` is not deployed; nothing here provisions it. The site in
+- `https://mutex.legible.sh` is not deployed; nothing here provisions it. The site in
   `site/` is a static page awaiting a host.
 - Pro features (reserved names, per-topic ACLs, event history, longer TTLs)
   are documented in README/CONCEPT.md and intentionally **not** implemented.

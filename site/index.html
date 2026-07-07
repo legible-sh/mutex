@@ -59,7 +59,7 @@
   </header>
 
   <pre><code><span class="c"># the whole integration:</span>
-curl -X POST '<span class="g">https://mutex.sh/migrate-prod-db?ttl=60</span>'
+curl -X POST '<span class="g">https://mutex.legible.sh/migrate-prod-db?ttl=60</span>'
 
 <span class="g">200</span> {"lease":"9f2c…","fence":12,"expires":"…"}   <span class="c"># yours for 60s</span>
 <span class="a">409</span> {"code":"BUSY","holders":["worker-1"]}      <span class="c"># it isn't</span></code></pre>
@@ -101,9 +101,9 @@ curl -X POST '<span class="g">https://mutex.sh/migrate-prod-db?ttl=60</span>'
   <pre><code>npx mutex-sh serve   <span class="c"># same API on 127.0.0.1:4185</span>
 <span class="c"># --data-dir to survive restarts · --token to require a bearer</span></code></pre>
 
-  <p><a href="https://github.com/mkrecny/mutex">Source on GitHub</a> — MIT,
+  <p><a href="https://github.com/legible-sh/mutex">Source on GitHub</a> — MIT,
   Node ≥ 20, zero dependencies. Tests, docs, and a
-  <a href="https://github.com/mkrecny/mutex#teach-your-agent">12-line block that
+  <a href="https://github.com/legible-sh/mutex#teach-your-agent">12-line block that
   teaches your agent the whole tool</a>.</p>
 
   <footer>

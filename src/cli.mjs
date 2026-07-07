@@ -1,5 +1,5 @@
 // The CLI: a thin client over the same HTTP API, plus `mutex serve`.
-// Base URL: --url flag > MUTEX_URL env > https://mutex.sh
+// Base URL: --url flag > MUTEX_URL env > https://mutex.legible.sh
 // Token:    --token flag > MUTEX_TOKEN env
 
 import { spawn } from 'node:child_process';
@@ -17,7 +17,7 @@ usage:
   mutex serve   [--port ${DEFAULT_PORT}] [--host 127.0.0.1] [--data-dir DIR] [--token T] [--base-url URL]
 
 client flags:
-  --url URL      server (default: $MUTEX_URL or https://mutex.sh)
+  --url URL      server (default: $MUTEX_URL or https://mutex.legible.sh)
   --token T      bearer token (default: $MUTEX_TOKEN)
 
 acquire blocks up to --wait seconds like flock(1); pass --wait 0 to fail fast.
@@ -40,7 +40,7 @@ export async function main(argv) {
   const [command, ...rest] = argv;
   const { flags, positional, passthrough } = parseArgs(rest);
   const ctx = {
-    url: (flags.url ?? process.env.MUTEX_URL ?? 'https://mutex.sh').replace(/\/+$/, ''),
+    url: (flags.url ?? process.env.MUTEX_URL ?? 'https://mutex.legible.sh').replace(/\/+$/, ''),
     token: flags.token ?? process.env.MUTEX_TOKEN ?? null,
   };
 

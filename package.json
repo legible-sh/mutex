@@ -28,7 +28,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mkrecny/mutex.git"
+    "url": "git+https://github.com/legible-sh/mutex.git"
   },
-  "homepage": "https://mutex.sh"
+  "homepage": "https://mutex.legible.sh"
 }

@@ -48,4 +48,4 @@ Free tier (and self-host, forever): every verb, every feature above. The hosted 
 - **Per-topic tokens / ACLs**
 - **SLA** on the hosted instance
 
-Each of these is worthless to a hobbyist and obviously worth $20/mo to a team whose deploy pipeline serializes through `mutex.sh/deploy-prod`.
+Each of these is worthless to a hobbyist and obviously worth $20/mo to a team whose deploy pipeline serializes through `mutex.legible.sh/deploy-prod`.

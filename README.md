@@ -10,12 +10,12 @@ Named locks and counting semaphores over plain HTTP — TTL leases, blocking acq
 </p>
 
 ```sh
-curl -X POST 'https://mutex.sh/migrate-prod-db?ttl=60'
+curl -X POST 'https://mutex.legible.sh/migrate-prod-db?ttl=60'
 # 200 {"lease":"…","fence":12,…}  → the lock is yours for 60s
 # 409 {"code":"BUSY","holders":["worker-1"],"waiting":0}  → it isn't
 ```
 
-> mutex.sh is the future hosted instance. Until it's live: `npx mutex-sh serve` and point curl at `http://127.0.0.1:4185`.
+> mutex.legible.sh is the future hosted instance. Until it's live: `npx mutex-sh serve` and point curl at `http://127.0.0.1:4185`.
 
 Two of your agents just decided to migrate the same database. Or push to the same repo, deploy to the same box, rebuild the same index — from different machines, different sandboxes, different continents. `flock(1)` can't help across a network boundary, and nobody wants to provision a ZooKeeper cluster to stop two curl-wielding processes from colliding. mutex is a named lock you can acquire, renew, and release with nothing but HTTP.
 
@@ -26,7 +26,7 @@ Let's concede the [Kleppmann objection](https://martin.kleppmann.com/2016/02/08/
 So mutex hands out *leases* and gives you the actual fix: **fencing tokens**. Every grant carries a `fence` — a per-topic integer that only ever goes up. Pass it to the resource you're protecting and have the resource reject anything stale:
 
 ```sh
-grant=$(curl -s -X POST 'https://mutex.sh/migrate-prod-db?ttl=60' -H 'X-Name: worker-2')
+grant=$(curl -s -X POST 'https://mutex.legible.sh/migrate-prod-db?ttl=60' -H 'X-Name: worker-2')
 fence=$(echo "$grant" | sed -n 's/.*"fence": \([0-9]*\).*/\1/p')
 
 psql -c "UPDATE migration_state SET fence = $fence WHERE fence < $fence"
@@ -56,7 +56,7 @@ The grant also includes ready-made `renew` and `release` URLs, so a shell script
 `capacity` turns a mutex into a counting semaphore. "At most 3 agents against the staging environment":
 
 ```sh
-curl -X POST 'https://mutex.sh/staging-env?ttl=120&capacity=3&wait=300' -H 'X-Name: agent-7'
+curl -X POST 'https://mutex.legible.sh/staging-env?ttl=120&capacity=3&wait=300' -H 'X-Name: agent-7'
 ```
 
 Three agents get permits; the fourth long-polls until someone releases, expires, or 300s pass. The first acquire fixes the topic's capacity; later acquirers either send the same number or omit it to adopt.
@@ -66,15 +66,15 @@ Three agents get permits; the fourth long-polls until someone releases, expires,
 Paste this into your agent's CLAUDE.md / AGENTS.md:
 
 ```
-## mutex — named locks & semaphores over HTTP (https://mutex.sh)
-Acquire:    curl -X POST 'https://mutex.sh/TOPIC?ttl=60' -H 'X-Name: me'
+## mutex — named locks & semaphores over HTTP (https://mutex.legible.sh)
+Acquire:    curl -X POST 'https://mutex.legible.sh/TOPIC?ttl=60' -H 'X-Name: me'
             → 200 {lease,fence,expires} = yours · 409 = held (body shows holders)
 Block:      add &wait=300 → long-polls FIFO until granted, or 408 = timed out
 Semaphore:  add &capacity=3 → at most 3 holders (all acquirers must agree on capacity)
-Heartbeat:  curl -X POST 'https://mutex.sh/TOPIC/LEASE/renew?ttl=60'
+Heartbeat:  curl -X POST 'https://mutex.legible.sh/TOPIC/LEASE/renew?ttl=60'
             → 404 = lease lost: STOP WORKING immediately
-Release:    curl -X DELETE 'https://mutex.sh/TOPIC/LEASE'
-Status:     curl 'https://mutex.sh/TOPIC' → {capacity,holders,waiting} (no lease tokens)
+Release:    curl -X DELETE 'https://mutex.legible.sh/TOPIC/LEASE'
+Status:     curl 'https://mutex.legible.sh/TOPIC' → {capacity,holders,waiting} (no lease tokens)
 Topics are created on first use: [a-zA-Z0-9_-]{1,64} — pick something unguessable.
 This is a lease, not a lock: write your fence number to the protected resource
 and reject any write carrying a lower fence than one already seen.
@@ -90,11 +90,11 @@ mutex serve --host 0.0.0.0 --port 4185 \
   --base-url https://mutex.example.com
 ```
 
-Or clone and run: `git clone https://github.com/mkrecny/mutex && cd mutex && npm start`. Node ≥ 20, zero dependencies, same API as hosted. Without `--data-dir` everything lives in memory and dies with the process — often exactly what you want from a lock. With `--token`, GETs stay open: status shows names and counts, never lease tokens, so reading it grants no capability. Limits (max TTL 3600s, max wait 300s, max capacity 1024, 4 KB bodies, 10k topics) live in [`src/limits.mjs`](src/limits.mjs).
+Or clone and run: `git clone https://github.com/legible-sh/mutex && cd mutex && npm start`. Node ≥ 20, zero dependencies, same API as hosted. Without `--data-dir` everything lives in memory and dies with the process — often exactly what you want from a lock. With `--token`, GETs stay open: status shows names and counts, never lease tokens, so reading it grants no capability. Limits (max TTL 3600s, max wait 300s, max capacity 1024, 4 KB bodies, 10k topics) live in [`src/limits.mjs`](src/limits.mjs).
 
 ## CLI
 
-The CLI is sugar over the same HTTP API — curl remains the contract. Server resolution: `--url` flag, then `MUTEX_URL` env, then `https://mutex.sh`.
+The CLI is sugar over the same HTTP API — curl remains the contract. Server resolution: `--url` flag, then `MUTEX_URL` env, then `https://mutex.legible.sh`.
 
 ```sh
 mutex acquire deploy --ttl 60 --wait 300 --name worker-3   # blocks like flock; --wait 0 to fail fast
