@@ -5,9 +5,14 @@
 //   DELETE /{topic}/{lease}             release
 //   GET    /{topic}                     status (JSON; HTML for browsers; SSE via Accept)
 //   GET    /{topic}/sse                 status events as SSE
-//   GET    /                            help (text; HTML for browsers)
+//   GET    /                            help (text; HTML for browsers; README via Accept: text/markdown)
+//   GET    /README.md                   the README, verbatim (text/markdown)
+//   GET    /llms.txt                    llms.txt pointer for agent discovery
 
 import { createServer as createHttpServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createStore } from './store.mjs';
 import { createManager, LockError } from './semaphore.mjs';
 import { homePage, statusPage } from './pages.mjs';
@@ -19,6 +24,26 @@ import {
 
 const iso = (ms) => new Date(ms).toISOString();
 
+// The README, loaded once at startup. null when running without one (e.g. a
+// bare install); /README.md then 404s with a pointer to the canonical copy.
+let README = null;
+try {
+  README = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'README.md'), 'utf8');
+} catch { /* tolerated: serve everything else without it */ }
+
+const LLMS_TXT = `# mutex
+
+> flock(1) for agents that live on different machines.
+
+A zero-dependency HTTP primitive: the URL is the API, curl is the SDK, the whole
+contract fits in one screen (GET / returns it as plain text).
+
+## Docs
+
+- [README](/README.md): the full contract — API table, examples, self-hosting
+- [Family index](https://legible.sh/llms.txt): mutex is one of the legible primitives
+`;
+
 const HELP = (base) => `mutex — flock(1) for agents that live on different machines
 
   acquire   POST   ${base}/{topic}?ttl=60            200 {lease,fence,expires} | 409 held
@@ -28,6 +53,7 @@ const HELP = (base) => `mutex — flock(1) for agents that live on different mac
   release   DELETE ${base}/{topic}/{lease}
   status    GET    ${base}/{topic}                   {capacity,holders,waiting}
   watch     GET    ${base}/{topic}/sse               SSE: status,grant,renew,release,expire
+  docs      GET    ${base}/README.md                 full contract (also ${base}/llms.txt)
 
 Name yourself with 'X-Name: worker-3' (or a plain-text body). Topics are
 created on first use: [a-zA-Z0-9_-]{1,64} — pick something unguessable.
@@ -78,10 +104,30 @@ export function createServer(options = {}) {
         return methodNotAllowed(res, 'GET', 'GET / is help; acquire a lock with POST /{topic}?ttl=60');
       }
       if (wants(req, 'text/html')) return sendHtml(res, homePage(base));
+      if (wants(req, 'text/markdown') && README !== null) return sendMarkdown(res, README);
       return sendText(res, 200, HELP(base));
     }
 
     if (parts[0] === 'favicon.ico') { res.writeHead(204); return res.end(); }
+
+    // Agent-discovery surfaces: exact paths, never token-gated (like GET /).
+    if (url.pathname === '/README.md') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        return methodNotAllowed(res, 'GET', 'GET /README.md is the docs; acquire a lock with POST /{topic}?ttl=60');
+      }
+      if (README === null) {
+        throw new LockError(404, 'NOT_FOUND', 'this instance is running without its README.md', {
+          hint: 'read the canonical copy at https://github.com/legible-sh/mutex',
+        });
+      }
+      return sendMarkdown(res, README);
+    }
+    if (url.pathname === '/llms.txt') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        return methodNotAllowed(res, 'GET', 'GET /llms.txt points at the docs; GET / is help');
+      }
+      return sendText(res, 200, LLMS_TXT);
+    }
 
     const topic = parts[0];
     if (!TOPIC_PATTERN.test(topic)) {
@@ -260,6 +306,11 @@ function sendJson(res, status, obj) {
 
 function sendText(res, status, text) {
   res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8' });
+  res.end(text);
+}
+
+function sendMarkdown(res, text) {
+  res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8' });
   res.end(text);
 }
 

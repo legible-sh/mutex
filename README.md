@@ -46,6 +46,7 @@ A zombie holder wakes up, writes with fence 12, but fence 13 already touched the
 | `DELETE` | `/{topic}/{lease}` | Release. `404` if already expired or released |
 | `GET` | `/{topic}` | Status: `{capacity, holders:[{name, since, expires, fence}], waiting}`. Never shows lease tokens |
 | `GET` | `/{topic}/sse` | Live SSE events: `status`, `grant`, `renew`, `release`, `expire` (heartbeat comment every 25s) |
+| `GET` | `/README.md` · `/llms.txt` | This document as `text/markdown` · an [llms.txt](https://llmstxt.org) pointer to it. Never token-gated; `GET /` with `Accept: text/markdown` also returns the README |
 
 Topics match `[a-zA-Z0-9_-]{1,64}` and are created by first use — an unguessable name is your access control until you opt into `--token`. Label yourself with `X-Name: worker-3` (or `?name=`, or a plain-text body). TTL is seconds (default 60, max 3600, fractions fine), `wait` caps at 300s per request — loop to wait longer. Errors are JSON: `{"error": "...", "code": "...", "hint": "..."}` — the `hint` is the correct next request, so nobody has to leave the response to recover. Open any topic in a browser for a live status page.
 

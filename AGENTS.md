@@ -29,7 +29,7 @@ verified against a local `mutex serve`.
   `serve`); a fetch client over the same HTTP API. `run` is the flock idiom.
 - `src/pages.mjs` — inline-CSS HTML for `GET /` and topic status pages.
 - `bin/mutex.mjs` — shebang shim calling `src/cli.mjs`.
-- `test/*.test.mjs` — 5 files, 25 tests, ~170 assertions, all over real HTTP
+- `test/*.test.mjs` — 6 files, 30 tests, ~185 assertions, all over real HTTP
   on port 0 (`test/helpers.mjs` boots servers).
 - `examples/*.sh` — three runnable walkthroughs against localhost.
 - `site/index.html` — self-contained landing page, no external assets.
@@ -63,7 +63,7 @@ verified against a local `mutex serve`.
 ## Verification Commands
 
 ```sh
-npm test                          # 25 tests, all green, ~3s, port 0, offline
+npm test                          # 30 tests, all green, ~3s, port 0, offline
 npm start                         # serve on http://127.0.0.1:4185
 
 # live smoke (server running):
