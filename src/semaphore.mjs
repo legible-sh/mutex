@@ -5,7 +5,7 @@
 import { EventEmitter } from 'node:events';
 import { randomBytes } from 'node:crypto';
 import { blankTopic } from './store.mjs';
-import { MAX_TOPICS, MAX_WAITERS_PER_TOPIC } from './limits.mjs';
+import { MAX_TOPICS, MAX_WAITERS_PER_TOPIC, MAX_WAIT_SECONDS } from './limits.mjs';
 
 export class LockError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -50,13 +50,19 @@ class LockManager extends EventEmitter {
     }
 
     if (waitMs <= 0) {
-      const err = new LockError(409, 'BUSY', `"${topicName}" has no free permits`, this.#crowd(topic));
+      const err = new LockError(409, 'BUSY', `"${topicName}" has no free permits`, {
+        hint: `re-POST with ?wait=${MAX_WAIT_SECONDS} to queue FIFO for a permit, or watch GET /${topicName}/sse for a release`,
+        ...this.#crowd(topic),
+      });
       return { promise: Promise.reject(err), cancel: () => {} };
     }
 
     if (this.#waiting(topic) >= MAX_WAITERS_PER_TOPIC) {
       const err = new LockError(429, 'WAITERS_LIMIT',
-        `"${topicName}" already has ${MAX_WAITERS_PER_TOPIC} waiters`, this.#crowd(topic));
+        `"${topicName}" already has ${MAX_WAITERS_PER_TOPIC} waiters`, {
+          hint: `watch GET /${topicName}/sse (or poll GET /${topicName}) and re-POST when waiting drops`,
+          ...this.#crowd(topic),
+        });
       return { promise: Promise.reject(err), cancel: () => {} };
     }
 
@@ -68,7 +74,10 @@ class LockManager extends EventEmitter {
     waiter.timer = setTimeout(() => {
       this.#unqueue(topic, waiter);
       waiter.reject(new LockError(408, 'TIMEOUT',
-        `timed out after ${waitMs / 1000}s waiting for "${topicName}"`, this.#crowd(topic)));
+        `timed out after ${waitMs / 1000}s waiting for "${topicName}"`, {
+          hint: `re-POST with ?wait=${waitMs / 1000} to rejoin the queue (FIFO — you rejoin at the back)`,
+          ...this.#crowd(topic),
+        }));
     }, waitMs);
     topic.waiters.push(waiter);
     const cancel = () => this.#unqueue(topic, waiter);
@@ -82,7 +91,9 @@ class LockManager extends EventEmitter {
     const holder = topic?.holders.get(lease);
     if (!holder) {
       throw new LockError(404, 'NOT_FOUND',
-        `no such lease on "${topicName}" — it expired or was released. Stop working.`);
+        `no such lease on "${topicName}" — it expired or was released. Stop working.`, {
+          hint: `abandon work guarded by the old fence; re-acquire with POST /${topicName}?ttl=${ttlMs / 1000} and use the new grant's fence`,
+        });
     }
     holder.expires = this.now() + ttlMs;
     this.store.append({ t: 'renew', topic: topicName, lease, expires: holder.expires });
@@ -98,7 +109,9 @@ class LockManager extends EventEmitter {
     const holder = topic?.holders.get(lease);
     if (!holder) {
       throw new LockError(404, 'NOT_FOUND',
-        `no such lease on "${topicName}" — it expired or was already released`);
+        `no such lease on "${topicName}" — it expired or was already released`, {
+          hint: `nothing to release — the permit is already back in the pool; POST /${topicName}?ttl=60 re-acquires`,
+        });
     }
     topic.holders.delete(lease);
     this.store.append({ t: 'release', topic: topicName, lease });
@@ -145,13 +158,17 @@ class LockManager extends EventEmitter {
       // All acquirers must agree on capacity; omitting it adopts the topic's.
       if (capacity !== null && capacity !== existing.capacity) {
         throw new LockError(409, 'CONFLICT',
-          `"${name}" is a capacity=${existing.capacity} ${existing.capacity === 1 ? 'mutex' : 'semaphore'}, not capacity=${capacity}`,
-          { capacity: existing.capacity });
+          `"${name}" is a capacity=${existing.capacity} ${existing.capacity === 1 ? 'mutex' : 'semaphore'}, not capacity=${capacity}`, {
+            hint: `re-POST with ?capacity=${existing.capacity}, or omit capacity to adopt the topic's value`,
+            capacity: existing.capacity,
+          });
       }
       return existing;
     }
     if (this.topics.size >= MAX_TOPICS) {
-      throw new LockError(429, 'TOPIC_LIMIT', `topic limit reached (${MAX_TOPICS})`);
+      throw new LockError(429, 'TOPIC_LIMIT', `topic limit reached (${MAX_TOPICS})`, {
+        hint: 'reuse an existing topic name — topics are never garbage-collected on this server',
+      });
     }
     const topic = blankTopic(name, capacity ?? 1);
     this.topics.set(name, topic);

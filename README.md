@@ -47,7 +47,7 @@ A zombie holder wakes up, writes with fence 12, but fence 13 already touched the
 | `GET` | `/{topic}` | Status: `{capacity, holders:[{name, since, expires, fence}], waiting}`. Never shows lease tokens |
 | `GET` | `/{topic}/sse` | Live SSE events: `status`, `grant`, `renew`, `release`, `expire` (heartbeat comment every 25s) |
 
-Topics match `[a-zA-Z0-9_-]{1,64}` and are created by first use — an unguessable name is your access control until you opt into `--token`. Label yourself with `X-Name: worker-3` (or `?name=`, or a plain-text body). TTL is seconds (default 60, max 3600, fractions fine), `wait` caps at 300s per request — loop to wait longer. Errors are JSON: `{"error": "...", "code": "..."}`. Open any topic in a browser for a live status page.
+Topics match `[a-zA-Z0-9_-]{1,64}` and are created by first use — an unguessable name is your access control until you opt into `--token`. Label yourself with `X-Name: worker-3` (or `?name=`, or a plain-text body). TTL is seconds (default 60, max 3600, fractions fine), `wait` caps at 300s per request — loop to wait longer. Errors are JSON: `{"error": "...", "code": "...", "hint": "..."}` — the `hint` is the correct next request, so nobody has to leave the response to recover. Open any topic in a browser for a live status page.
 
 The grant also includes ready-made `renew` and `release` URLs, so a shell script never has to build one.
 
@@ -128,7 +128,7 @@ The hosted instance will sell capacity and guarantees, never the verbs — self-
 
 ## The family
 
-mutex is one of ten legible primitives, each a single curl away:
+mutex is one of the legible primitives, each a single curl away:
 
 | | port | |
 |---|---|---|

@@ -46,6 +46,7 @@ test('long-poll: 408 with crowd info when the wait runs out', async (t) => {
   assert.equal(timedOut.json.code, 'TIMEOUT');
   assert.ok(Date.now() - started >= 280, 'waited roughly the requested time');
   assert.deepEqual(timedOut.json.holders, ['hog']);
+  assert.match(timedOut.json.hint, /rejoin the queue/, 'a 408 says how to keep waiting');
 });
 
 test('expiry: a dead holder frees the permit and unblocks a waiter', async (t) => {

@@ -74,7 +74,9 @@ export function createServer(options = {}) {
     }
 
     if (parts.length === 0) {
-      if (req.method !== 'GET' && req.method !== 'HEAD') return methodNotAllowed(res, 'GET');
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        return methodNotAllowed(res, 'GET', 'GET / is help; acquire a lock with POST /{topic}?ttl=60');
+      }
       if (wants(req, 'text/html')) return sendHtml(res, homePage(base));
       return sendText(res, 200, HELP(base));
     }
@@ -90,7 +92,9 @@ export function createServer(options = {}) {
     // counts, never lease tokens, so reading them grants no capability.
     if (token && req.method !== 'GET' && req.method !== 'HEAD') {
       if (req.headers.authorization !== `Bearer ${token}`) {
-        throw new LockError(401, 'UNAUTHORIZED', 'missing or wrong bearer token');
+        throw new LockError(401, 'UNAUTHORIZED', 'missing or wrong bearer token', {
+          hint: "retry with -H 'Authorization: Bearer <token>' — the value this server was started with (--token)",
+        });
       }
     }
 
@@ -102,9 +106,10 @@ export function createServer(options = {}) {
         return sendJson(res, 200, statusView(topic));
       }
       if (req.method === 'DELETE') {
-        return methodNotAllowed(res, 'GET, POST', 'release is DELETE /{topic}/{lease}');
+        return methodNotAllowed(res, 'GET, POST',
+          'release is DELETE /{topic}/{lease} — the lease is in your acquire response');
       }
-      return methodNotAllowed(res, 'GET, POST');
+      return methodNotAllowed(res, 'GET, POST', 'POST /{topic}?ttl=60 acquires; GET /{topic} shows status');
     }
 
     if (parts.length === 2) {
@@ -115,17 +120,22 @@ export function createServer(options = {}) {
         const out = manager.release(topic, parts[1]);
         return sendJson(res, 200, out);
       }
-      return methodNotAllowed(res, 'DELETE');
+      return methodNotAllowed(res, 'DELETE',
+        'DELETE /{topic}/{lease} releases; renew is POST /{topic}/{lease}/renew?ttl=60; status is GET /{topic}');
     }
 
     if (parts.length === 3 && parts[2] === 'renew') {
-      if (req.method !== 'POST') return methodNotAllowed(res, 'POST');
+      if (req.method !== 'POST') {
+        return methodNotAllowed(res, 'POST', 'renew with POST /{topic}/{lease}/renew?ttl=60');
+      }
       const ttlMs = parseTtl(url);
       const out = manager.renew(topic, parts[1], ttlMs);
       return sendJson(res, 200, { ...out, expires: iso(out.expires) });
     }
 
-    throw new LockError(404, 'NOT_FOUND', 'no such route');
+    throw new LockError(404, 'NOT_FOUND', 'no such route', {
+      hint: 'the API: POST /{topic} · POST /{topic}/{lease}/renew · DELETE /{topic}/{lease} · GET /{topic} — GET / for help',
+    });
   }
 
   async function acquire(req, res, url, topic) {
@@ -206,7 +216,9 @@ function parseWait(url) {
   if (raw === null || raw === '') return 0;
   const wait = Number(raw);
   if (!Number.isFinite(wait) || wait < 0 || wait > MAX_WAIT_SECONDS) {
-    throw new LockError(400, 'BAD_PARAM', `wait must be 0-${MAX_WAIT_SECONDS} seconds`);
+    throw new LockError(400, 'BAD_PARAM', `wait must be 0-${MAX_WAIT_SECONDS} seconds`, {
+      hint: `to wait longer than ${MAX_WAIT_SECONDS}s, loop: re-POST with ?wait=${MAX_WAIT_SECONDS} until granted`,
+    });
   }
   return wait * 1000;
 }
@@ -227,7 +239,9 @@ async function readBody(req) {
   for await (const chunk of req) {
     size += chunk.length;
     if (size > MAX_BODY_BYTES) {
-      throw new LockError(413, 'TOO_LARGE', `body larger than ${MAX_BODY_BYTES} bytes`);
+      throw new LockError(413, 'TOO_LARGE', `body larger than ${MAX_BODY_BYTES} bytes`, {
+        hint: "the body is only read as your holder name — send 'X-Name: worker-3' (or ?name=) instead",
+      });
     }
     chunks.push(chunk);
   }
@@ -254,7 +268,7 @@ function sendHtml(res, html) {
   res.end(html);
 }
 
-function methodNotAllowed(res, allow, hint = null) {
+function methodNotAllowed(res, allow, hint) {
   res.setHeader('allow', allow);
-  sendJson(res, 405, { error: hint ?? `use ${allow}`, code: 'METHOD_NOT_ALLOWED' });
+  sendJson(res, 405, { error: `use ${allow}`, code: 'METHOD_NOT_ALLOWED', hint });
 }

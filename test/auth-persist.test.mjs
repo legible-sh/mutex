@@ -14,6 +14,7 @@ test('token: POST/DELETE require the bearer, GET stays open', async (t) => {
   const noAuth = await req('POST', `${url}/guarded`);
   assert.equal(noAuth.status, 401);
   assert.equal(noAuth.json.code, 'UNAUTHORIZED');
+  assert.match(noAuth.json.hint, /Authorization: Bearer/, 'a 401 shows the header to send');
 
   const wrongAuth = await req('POST', `${url}/guarded`, { headers: { authorization: 'Bearer nope' } });
   assert.equal(wrongAuth.status, 401);

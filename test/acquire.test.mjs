@@ -27,6 +27,7 @@ test('mutex lifecycle: acquire, contend, release, reacquire', async (t) => {
   assert.equal(b.json.code, 'BUSY');
   assert.deepEqual(b.json.holders, ['worker-1']);
   assert.equal(b.json.waiting, 0);
+  assert.match(b.json.hint, /\?wait=/, 'a 409 teaches the caller how to queue');
 
   // Status shows the holder but never the lease token.
   const s = await req('GET', `${url}/migrate-db`);
@@ -52,6 +53,7 @@ test('mutex lifecycle: acquire, contend, release, reacquire', async (t) => {
   const rr = await req('DELETE', `${url}/migrate-db/${a.json.lease}`);
   assert.equal(rr.status, 404);
   assert.equal(rr.json.code, 'NOT_FOUND');
+  assert.match(rr.json.hint, /nothing to release/);
 });
 
 test('holder naming: X-Name, ?name=, plain-text body, anonymous fallback', async (t) => {
@@ -96,6 +98,7 @@ test('validation: bad topics, bad params, oversized bodies, wrong methods', asyn
   const fatBody = await req('POST', `${url}/t`, { body: 'x'.repeat(5000) });
   assert.equal(fatBody.status, 413);
   assert.equal(fatBody.json.code, 'TOO_LARGE');
+  assert.match(fatBody.json.hint, /X-Name/, 'a 413 points at the header alternative');
 
   const longName = await req('POST', `${url}/t`, { headers: { 'x-name': 'x'.repeat(200) } });
   assert.equal(longName.status, 400);
@@ -103,13 +106,16 @@ test('validation: bad topics, bad params, oversized bodies, wrong methods', asyn
   const wrongMethod = await req('DELETE', `${url}/t`);
   assert.equal(wrongMethod.status, 405);
   assert.equal(wrongMethod.json.code, 'METHOD_NOT_ALLOWED');
+  assert.match(wrongMethod.json.hint, /DELETE \/\{topic\}\/\{lease\}/, 'a 405 spells out the right call');
 
   const noRoute = await req('GET', `${url}/t/x/y/z`);
   assert.equal(noRoute.status, 404);
+  assert.match(noRoute.json.hint, /POST \/\{topic\}/, 'a 404 route error maps the API');
 
   // Renewing a lease that never existed.
   const ghost = await req('POST', `${url}/t/deadbeefdeadbeefdeadbeefdeadbeef/renew`);
   assert.equal(ghost.status, 404);
+  assert.match(ghost.json.hint, /re-acquire/, 'a lost lease says how to start over');
 });
 
 test('content negotiation: curl gets text/JSON, browsers get HTML', async (t) => {

@@ -45,6 +45,7 @@ test('capacity must be agreed: explicit mismatch is 409 CONFLICT, omitting adopt
   assert.equal(wrong.status, 409);
   assert.equal(wrong.json.code, 'CONFLICT');
   assert.equal(wrong.json.capacity, 3, 'conflict reply teaches the real capacity');
+  assert.match(wrong.json.hint, /\?capacity=3/, 'and how to retry with it');
 
   const asMutex = await req('POST', `${url}/pool?capacity=1&name=third`);
   assert.equal(asMutex.status, 409);
