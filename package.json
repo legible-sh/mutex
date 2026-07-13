@@ -1,5 +1,5 @@
 {
-  "name": "mutex-sh",
+  "name": "legible-mutex",
   "version": "0.1.0",
   "description": "flock(1) for agents that live on different machines. Named locks and counting semaphores over plain HTTP, with TTL leases and fencing tokens.",
   "type": "module",

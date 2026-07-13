@@ -15,7 +15,7 @@ curl -X POST 'https://mutex.legible.sh/migrate-prod-db?ttl=60'
 # 409 {"code":"BUSY","holders":["worker-1"],"waiting":0}  → it isn't
 ```
 
-> The hosted API at mutex.legible.sh is in soft launch. To run the identical API yourself: `npx mutex-sh serve` and point curl at `http://127.0.0.1:4185`.
+> The hosted API at mutex.legible.sh is in soft launch. To run the identical API yourself: `npx legible-mutex serve` and point curl at `http://127.0.0.1:4185`.
 
 Two of your agents just decided to migrate the same database. Or push to the same repo, deploy to the same box, rebuild the same index — from different machines, different sandboxes, different continents. `flock(1)` can't help across a network boundary, and nobody wants to provision a ZooKeeper cluster to stop two curl-wielding processes from colliding. mutex is a named lock you can acquire, renew, and release with nothing but HTTP.
 
@@ -84,7 +84,7 @@ and reject any write carrying a lower fence than one already seen.
 ## Self-hosting
 
 ```sh
-npx mutex-sh serve                  # http://127.0.0.1:4185, in-memory
+npx legible-mutex serve             # http://127.0.0.1:4185, in-memory
 mutex serve --host 0.0.0.0 --port 4185 \
   --data-dir ~/.mutex \             # leases/fences survive restarts (JSONL, replayed on boot)
   --token s3cret \                  # require Authorization: Bearer on POST/DELETE
