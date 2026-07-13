@@ -30,5 +30,14 @@
     "type": "git",
     "url": "git+https://github.com/legible-sh/mutex.git"
   },
-  "homepage": "https://mutex.legible.sh"
+  "homepage": "https://mutex.legible.sh",
+  "bugs": {
+    "url": "https://github.com/legible-sh/mutex/issues"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ]
 }
